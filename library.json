@@ -1,0 +1,21 @@
+{
+    "name": "Janus_decoder_lib",
+    "keywords": "ESP32, RS485, 485, Janus",
+    "description": "Library for decoding Janus protocol.",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/haberturdeur/Janus_decoder_lib.git"
+    },
+    "authors": [
+
+        {
+            "name": "Tomáš Rohlínek",
+            "email": "tomas.rohlinek@outlook.cz",
+		    "maintainer": true
+        }
+    ],
+    "version": "1.0.0",
+    "frameworks": [ "arduino" ],
+    "platforms": "espressif32"
+}
