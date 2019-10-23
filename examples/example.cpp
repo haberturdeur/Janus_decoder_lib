@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "protocol.h"
+#include "Janus_decoder.h"
 
 Decoder decoder(UART_NUM_2, -1, -1, -1, -1);
 void setup() {
