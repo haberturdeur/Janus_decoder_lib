@@ -1,7 +1,6 @@
 #pragma once
 
-#include <Arduino.h>
-#include <string>
+#include <vector>
 #include "driver/uart.h"
 
 // Note: UART2 default pins IO16, IO17 do not work on ESP32-WROVER module 
@@ -46,25 +45,18 @@ enum byte_order{
     RECEPIENT_ADDR_BYTE,
     SENDER_ADDR_BYTE,
     COMMAND_BYTE,
-    FIRST_DATA_BYTE,
-    SECOND_DATA_BYTE,
-    THIRD_DATA_BYTE,
-    FOURTH_DATA_BYTE,
-    FIFTH_DATA_BYTE,
-    CHECK_BYTE
+    LENGTH_OF_DATA_BYTE,
+    CHECK_BYTE,
+    FIRST_DATA_BYTE
 };
 
 enum message_order{
     RECEPIENT_ADDR,
     SENDER_ADDR,
     COMMAND,
-    FIRST_DATA,
-    SECOND_DATA,
-    THIRD_DATA,
-    FOURTH_DATA,
-    FIFTH_DATA,
+    LENGHT_OF_DATA,
     CHECK,
-    MO_MAX
+    FIRST_DATA
 };
 
 const char SOH = 0x80;
@@ -74,8 +66,9 @@ struct message_t
     uint8_t rec_addr;
     uint8_t send_addr;
     uint8_t cmd;
+    uint8_t length;
     uint8_t check;
-    uint8_t data[5];
+    std::vector<uint8_t> data;
     bool correct{0};
 };
 
@@ -99,7 +92,7 @@ public:
             uint8_t rec_addr,
             uint8_t sen_addr,
             uint8_t cmd,
-            uint8_t* src);
+            std::vector<uint8_t>& src);
     message_t receive();
     uint8_t my_addr = 0x00;
     message_t received_message;
