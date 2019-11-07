@@ -21,9 +21,10 @@ Decoder::Decoder(uart_port_t u_port,
     uart_set_mode(uart_port, UART_MODE_RS485_HALF_DUPLEX);
 }
 
-void Decoder::send(uint8_t rec_addr,uint8_t sen_addr, uint8_t cmd, uint8_t* src){
+void Decoder::send(uint8_t rec_addr,uint8_t sen_addr, uint8_t cmd, std::vector<uint8_t>& src){
+    uint8_t length_of_data = src.size();
     uint8_t control = rec_addr + sen_addr + cmd;
-    for(int i = 0; i<5; i++){
+    for(auto i : src){
         control += src[i];
     }
     control = control % 256;
@@ -34,19 +35,37 @@ void Decoder::send(uint8_t rec_addr,uint8_t sen_addr, uint8_t cmd, uint8_t* src)
     uart_write_bytes(uart_port, (const char*)&rec_addr, 1);
     uart_write_bytes(uart_port, (const char*)&sen_addr, 1);
     uart_write_bytes(uart_port, (const char*)&cmd, 1);
-    uart_write_bytes(uart_port, (const char*)src, 5);
+    uart_write_bytes(uart_port, (const char*)&length_of_data, 1);
     uart_write_bytes(uart_port, (const char*)&control, 1);
+    for(auto i : src){
+        uart_write_bytes(uart_port, (const char*) &(src[i]), 1);
+    }
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    
 }
 
 message_t Decoder::receive(){
     uint8_t read_byte;
-    static uint8_t* rec_buff = (uint8_t*) malloc(MO_MAX);
-    do
-    {
+    received_message.data.clear();
+    static uint8_t* rec_buff = (uint8_t*) malloc(buffer_size);
+    do{
         uart_read_bytes(uart_port, &read_byte, 1, PACKET_READ_TICS);
-    } while (read_byte != SOH);
-    uart_read_bytes(uart_port, rec_buff, MO_MAX, PACKET_READ_TICS);
-    received_message = parse_message(rec_buff);
+    }while (read_byte != SOH);
+    uart_read_bytes(uart_port, rec_buff, 1, PACKET_READ_TICS);
+    received_message.rec_addr = rec_buff[0];
+    uart_read_bytes(uart_port, rec_buff, 1, PACKET_READ_TICS);
+    received_message.send_addr = rec_buff[0];
+    uart_read_bytes(uart_port, rec_buff, 1, PACKET_READ_TICS);
+    received_message.cmd = rec_buff[0];
+    uart_read_bytes(uart_port, rec_buff, 1, PACKET_READ_TICS);
+    received_message.length = rec_buff[0];
+    uart_read_bytes(uart_port, rec_buff, 1, PACKET_READ_TICS);
+    received_message.check = rec_buff[0];
+    for(int i = 0; i<received_message.length; i++){
+        uart_read_bytes(uart_port, rec_buff, 1, PACKET_READ_TICS);
+        received_message.data.push_back(rec_buff[0]);
+    } 
+    // received_message = parse_message(rec_buff);
     uart_flush(uart_port);
     return received_message;
 }
@@ -73,26 +92,26 @@ message_t Decoder::parse_message(uint8_t* msg){
             printf("Data: ");
             #endif
 
-    output.data[0] = msg[(FIRST_DATA*sizeof(uint8_t))];
-        #if debug
-            printf("Data: %u", output.data[0]);
-            #endif
-    output.data[1] = msg[(SECOND_DATA*sizeof(uint8_t))];
-        #if debug
-            printf("%u", output.data[1]);
-            #endif
-    output.data[2] = msg[(THIRD_DATA*sizeof(uint8_t))];
-        #if debug
-            printf("%u", output.data[2]);
-            #endif
-    output.data[3] = msg[(FOURTH_DATA*sizeof(uint8_t))];
-        #if debug
-            printf("%u", output.data[3]);
-            #endif
-    output.data[4] = msg[(FIFTH_DATA*sizeof(uint8_t))];
-        #if debug
-            printf("%u\n", output.data[4]);
-            #endif
+    // output.data[0] = msg[(FIRST_DATA*sizeof(uint8_t))];
+    //     #if debug
+    //         printf("Data: %u", output.data[0]);
+    //         #endif
+    // output.data[1] = msg[(SECOND_DATA*sizeof(uint8_t))];
+    //     #if debug
+    //         printf("%u", output.data[1]);
+    //         #endif
+    // output.data[2] = msg[(THIRD_DATA*sizeof(uint8_t))];
+    //     #if debug
+    //         printf("%u", output.data[2]);
+    //         #endif
+    // output.data[3] = msg[(FOURTH_DATA*sizeof(uint8_t))];
+    //     #if debug
+    //         printf("%u", output.data[3]);
+    //         #endif
+    // output.data[4] = msg[(FIFTH_DATA*sizeof(uint8_t))];
+    //     #if debug
+    //         printf("%u\n", output.data[4]);
+    //         #endif
 
     output.check = msg[(CHECK_BYTE*sizeof(uint8_t))];
         #if debug
