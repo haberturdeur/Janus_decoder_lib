@@ -6,8 +6,8 @@
         {
             "name": "Win32",
             "includePath": [
-                "d:/Projects/Janus_decoder_lib/include",
-                "d:/Projects/Janus_decoder_lib/src",
+                "d:/Projects/Janus_slave_library/lib/Janus_decoder_lib/include",
+                "d:/Projects/Janus_slave_library/lib/Janus_decoder_lib/src",
                 "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/config",
                 "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_trace",
                 "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_update",
@@ -66,6 +66,9 @@
                 "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/fb_gfx",
                 "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/cores/esp32",
                 "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/variants/esp32",
+                "C:/Users/Tom/.platformio/lib/MFRC522_ID63/src",
+                "C:/Users/Tom/.platformio/lib/MPU6050_tockn_ID2824/src",
+                "C:/Users/Tom/.platformio/lib/Servo_ID883/src",
                 "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                 "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
                 "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/libraries/AzureIoT/src",
@@ -98,8 +101,8 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "d:/Projects/Janus_decoder_lib/include",
-                    "d:/Projects/Janus_decoder_lib/src",
+                    "d:/Projects/Janus_slave_library/lib/Janus_decoder_lib/include",
+                    "d:/Projects/Janus_slave_library/lib/Janus_decoder_lib/src",
                     "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/config",
                     "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_trace",
                     "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_update",
@@ -158,6 +161,9 @@
                     "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/fb_gfx",
                     "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/cores/esp32",
                     "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/variants/esp32",
+                    "C:/Users/Tom/.platformio/lib/MFRC522_ID63/src",
+                    "C:/Users/Tom/.platformio/lib/MPU6050_tockn_ID2824/src",
+                    "C:/Users/Tom/.platformio/lib/Servo_ID883/src",
                     "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                     "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
                     "C:/Users/Tom/.platformio/packages/framework-arduinoespressif32/libraries/AzureIoT/src",
@@ -189,7 +195,7 @@
                 ]
             },
             "defines": [
-                "PLATFORMIO=40003",
+                "PLATFORMIO=40100",
                 "ARDUINO_ESP32_DEV",
                 "ESP32",
                 "ESP_PLATFORM",

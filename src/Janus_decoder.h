@@ -2,6 +2,7 @@
 
 #include <vector>
 #include "driver/uart.h"
+// #include "command_list.h"
 
 // Note: UART2 default pins IO16, IO17 do not work on ESP32-WROVER module 
 // because these pins connected to PSRAM
@@ -75,12 +76,9 @@ struct message_t
 class Decoder
 {
 private:
-    const gpio_mode_t mode = GPIO_MODE_OUTPUT;
     uart_port_t uart_port;
     int buffer_size;
-public:
-
-    
+public:    
     Decoder(uart_port_t u_port, 
             int rx_p = DEFAULT_PIN_RXD, 
             int tx_p = DEFAULT_PIN_TXD, 
@@ -92,13 +90,10 @@ public:
             uint8_t rec_addr,
             uint8_t sen_addr,
             uint8_t cmd,
-            std::vector<uint8_t>& src);
+            std::vector<uint8_t>* src);
     message_t receive();
     uint8_t my_addr = 0x00;
     message_t received_message;
     message_t parse_message(uint8_t* msg);
     
 };
-
-
-

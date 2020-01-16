@@ -1,5 +1,6 @@
 
 #include "Janus_decoder.h"
+// #include "command_list.h"
 
 
 Decoder::Decoder(uart_port_t u_port, 
@@ -21,11 +22,11 @@ Decoder::Decoder(uart_port_t u_port,
     uart_set_mode(uart_port, UART_MODE_RS485_HALF_DUPLEX);
 }
 
-void Decoder::send(uint8_t rec_addr,uint8_t sen_addr, uint8_t cmd, std::vector<uint8_t>& src){
-    uint8_t length_of_data = src.size();
+void Decoder::send(uint8_t rec_addr,uint8_t sen_addr, uint8_t cmd, std::vector<uint8_t>* src){
+    uint8_t length_of_data = src->size();
     uint8_t control = rec_addr + sen_addr + cmd;
-    for(auto i : src){
-        control += src[i];
+    for(int i = 0; i<length_of_data; i++){
+        control += (*src)[i];
     }
     control = control % 256;
         #if debug
@@ -37,8 +38,10 @@ void Decoder::send(uint8_t rec_addr,uint8_t sen_addr, uint8_t cmd, std::vector<u
     uart_write_bytes(uart_port, (const char*)&cmd, 1);
     uart_write_bytes(uart_port, (const char*)&length_of_data, 1);
     uart_write_bytes(uart_port, (const char*)&control, 1);
-    for(auto i : src){
-        uart_write_bytes(uart_port, (const char*) &(src[i]), 1);
+    char out_data = 0;
+    for(int i = 0; i<length_of_data; i++){
+        out_data = (*src)[i];
+        uart_write_bytes(uart_port, (const char*)(&out_data), 1);
     }
     vTaskDelay(200 / portTICK_PERIOD_MS);
     
