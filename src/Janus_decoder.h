@@ -7,7 +7,7 @@
 // because these pins connected to PSRAM
 
 #define wrover false
-#define debug true
+#define debug_decoder true
 
 #if wrover
     #define DEFAULT_PIN_TXD   (23)//23 
@@ -72,33 +72,44 @@ struct message_t
     bool correct{0};
 };
 
+struct Janus_decoder_settings_t
+{
+    uart_port_t u_port; 
+    int rx_p = DEFAULT_PIN_RXD; 
+    int tx_p = DEFAULT_PIN_TXD; 
+    int rts_p = DEFAULT_PIN_RTS; 
+    int cts_p = DEFAULT_PIN_CTS;
+    uart_config_t* u_config = &default_uart_config;
+    int buff_size = BUF_SIZE;
+}Janus_decoder_default_settings;
+
+
 class Decoder
 {
 private:
-    const gpio_mode_t mode = GPIO_MODE_OUTPUT;
     uart_port_t uart_port;
     int buffer_size;
-public:
+public:    
 
-    
-    Decoder(uart_port_t u_port, 
+    void init(uart_port_t u_port, 
             int rx_p = DEFAULT_PIN_RXD, 
             int tx_p = DEFAULT_PIN_TXD, 
             int rts_p = DEFAULT_PIN_RTS, 
             int cts_p = DEFAULT_PIN_CTS,
             uart_config_t* u_config = &default_uart_config,
             int buff_size = BUF_SIZE);
+    void init(Janus_decoder_settings_t settings = Janus_decoder_default_settings);
     void send(
             uint8_t rec_addr,
             uint8_t sen_addr,
             uint8_t cmd,
-            std::vector<uint8_t>& src);
+            std::vector<uint8_t>* src);
     message_t receive();
     uint8_t my_addr = 0x00;
     message_t received_message;
     message_t parse_message(uint8_t* msg);
     
+    Decoder& getDecoder(){
+        return *this;
+    }
 };
-
-
-
