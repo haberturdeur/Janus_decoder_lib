@@ -3,7 +3,7 @@
 // #include "command_list.h"
 
 
-Decoder::Decoder(uart_port_t u_port, 
+void Decoder::init(uart_port_t u_port, 
             int rx_p, 
             int tx_p, 
             int rts_p, 
@@ -22,6 +22,19 @@ Decoder::Decoder(uart_port_t u_port,
     uart_set_mode(uart_port, UART_MODE_RS485_HALF_DUPLEX);
 }
 
+void Decoder::init(Janus_decoder_settings_t settings){
+    uart_port = settings.u_port;
+    buffer_size = settings.buff_size;
+    if(settings.rx_p == -1) settings.rx_p = DEFAULT_PIN_RXD;
+    if(settings.tx_p == -1) settings.tx_p = DEFAULT_PIN_TXD;
+    if(settings.rts_p == -1) settings.rts_p = DEFAULT_PIN_RTS;
+    if(settings.cts_p == -1) settings.cts_p = DEFAULT_PIN_CTS;
+    uart_param_config(uart_port, settings.u_config);
+    uart_set_pin(uart_port, settings.tx_p, settings.rx_p, settings.rts_p, settings.cts_p);
+    uart_driver_install(uart_port, buffer_size * 2, 0, 0, NULL, 0);
+    uart_set_mode(uart_port, UART_MODE_RS485_HALF_DUPLEX);
+}
+
 void Decoder::send(uint8_t rec_addr,uint8_t sen_addr, uint8_t cmd, std::vector<uint8_t>* src){
     uint8_t length_of_data = src->size();
     uint8_t control = rec_addr + sen_addr + cmd;
@@ -29,7 +42,7 @@ void Decoder::send(uint8_t rec_addr,uint8_t sen_addr, uint8_t cmd, std::vector<u
         control += (*src)[i];
     }
     control = control % 256;
-        #if debug
+        #if debug_decoder
             printf("Check: %u\n", control);
         #endif
     uart_write_bytes(uart_port, &SOH, 1);
@@ -77,63 +90,52 @@ message_t Decoder::receive(){
 
 message_t Decoder::parse_message(uint8_t* msg){
     message_t output;
-        #if debug
+        #if debug_decoder
             printf("Parsing message.\n");
             #endif
     output.rec_addr = msg[(RECEPIENT_ADDR*sizeof(uint8_t))];
-        #if debug
+        #if debug_decoder
             printf("Recepient: %u\n", output.rec_addr);
             #endif
     output.send_addr = msg[(SENDER_ADDR*sizeof(uint8_t))];
-        #if debug
+        #if debug_decoder
             printf("Sender: %u\n", output.send_addr);
             #endif
     output.cmd = msg[(COMMAND*sizeof(uint8_t))];
-        #if debug
+        #if debug_decoder
             printf("Command: %u\n", output.cmd);
             printf((const char*)&output.cmd);
             printf("Data: ");
             #endif
 
-    // output.data[0] = msg[(FIRST_DATA*sizeof(uint8_t))];
-    //     #if debug
-    //         printf("Data: %u", output.data[0]);
-    //         #endif
-    // output.data[1] = msg[(SECOND_DATA*sizeof(uint8_t))];
-    //     #if debug
-    //         printf("%u", output.data[1]);
-    //         #endif
-    // output.data[2] = msg[(THIRD_DATA*sizeof(uint8_t))];
-    //     #if debug
-    //         printf("%u", output.data[2]);
-    //         #endif
-    // output.data[3] = msg[(FOURTH_DATA*sizeof(uint8_t))];
-    //     #if debug
-    //         printf("%u", output.data[3]);
-    //         #endif
-    // output.data[4] = msg[(FIFTH_DATA*sizeof(uint8_t))];
-    //     #if debug
-    //         printf("%u\n", output.data[4]);
-    //         #endif
-
+    
+    
     output.check = msg[(CHECK_BYTE*sizeof(uint8_t))];
-        #if debug
+        #if debug_decoder
             printf("Check: %u\n", output.check);
             #endif
-    
+    output.data.clear();
+    for(int i = 0; i< output.length; i++){
+        output.data.push_back(msg[(FIRST_DATA_BYTE*sizeof(uint8_t))+(i*sizeof(uint8_t))]);
+            #if debug_decoder
+            printf("%u\n", output.data[i]);
+            #endif
+    }
+
+
     int check_calc = 0;
 
     check_calc += output.rec_addr;
     check_calc += output.send_addr;
     check_calc += output.cmd;
-    for(int i = 0; i< 5; i++) 
+    for( auto &i : output.data)
         check_calc += output.data[i];
     check_calc = check_calc % 256;
     if(check_calc==output.check) 
         output.correct = 1; 
         else 
         output.correct = 0;
-        #if debug
+        #if debug_decoder
             printf("Check_calc: %u\n", check_calc);
             printf("Check_sum check: %u\n", output.correct);
         #endif
