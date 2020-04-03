@@ -10,8 +10,6 @@ static const Janus_decoder_settings_t JanusDecoderDefaultSettings;
 
 class Decoder {
 private:
-    uart_port_t m_uartPort;
-    int m_bufferSize;
     uint8_t m_myAddress = 0x00;
     message_t m_receivedMessage;
     Janus_decoder_settings_t m_settings;
