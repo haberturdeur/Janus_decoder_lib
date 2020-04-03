@@ -21,20 +21,19 @@ void Decoder::init(uart_port_t i_uartPort,
 
 void Decoder::init(Janus_decoder_settings_t settings)
 {
-    m_uartPort = settings.uartPort;
-    m_bufferSize = settings.uartBufferSize;
-    if (settings.rxPin == -1)
-        settings.rxPin = DEFAULT_PIN_RXD;
-    if (settings.txPin == -1)
-        settings.txPin = DEFAULT_PIN_TXD;
-    if (settings.rtsPin == -1)
-        settings.rtsPin = DEFAULT_PIN_RTS;
-    if (settings.ctsPin == -1)
-        settings.ctsPin = DEFAULT_PIN_CTS;
-    uart_param_config(m_uartPort, settings.uartConfigPtr);
-    uart_set_pin(m_uartPort, settings.txPin, settings.rxPin, settings.rtsPin, settings.ctsPin);
-    uart_driver_install(m_uartPort, m_bufferSize * 2, 0, 0, NULL, 0);
-    uart_set_mode(m_uartPort, UART_MODE_RS485_HALF_DUPLEX);
+    m_settings = settings;
+    if (m_settings.rxPin == -1)
+        m_settings.rxPin = DEFAULT_PIN_RXD;
+    if (m_settings.txPin == -1)
+        m_settings.txPin = DEFAULT_PIN_TXD;
+    if (m_settings.rtsPin == -1)
+        m_settings.rtsPin = DEFAULT_PIN_RTS;
+    if (m_settings.ctsPin == -1)
+        m_settings.ctsPin = DEFAULT_PIN_CTS;
+    uart_param_config(m_settings.uartPort, m_settings.uartConfigPtr);
+    uart_set_pin(m_settings.uartPort, m_settings.txPin, m_settings.rxPin, m_settings.rtsPin, m_settings.ctsPin);
+    uart_driver_install(m_settings.uartPort, m_settings.uartBufferSize * 2, m_settings.uartBufferSize * 2, 20, &m_queue, 0);
+    uart_set_mode(m_settings.uartPort, UART_MODE_RS485_HALF_DUPLEX);
 }
 
 void Decoder::send(uint8_t recepientAddress, uint8_t sen_addr, uint8_t cmd, std::vector<uint8_t>& src)
@@ -69,7 +68,7 @@ message_t Decoder::receive()
 #if debug_decoder
     printf("Receiving message");
 #endif
-    static uint8_t* rec_buff = (uint8_t*)malloc(m_bufferSize);
+    static uint8_t* rec_buff = (uint8_t*)malloc(m_settings.uartBufferSize);
     do {
         readBytes( &read_byte, 1, PACKET_READ_TICS);
 #if debug_decoder
@@ -114,7 +113,7 @@ message_t Decoder::receive()
 #endif
     }
     // received_message = parse_message(rec_buff);
-    uart_flush(m_uartPort);
+    uart_flush(m_settings.uartPort);
 
     if (calculateChecksum(m_receivedMessage) == m_receivedMessage.check)
         m_receivedMessage.correct = 1;
