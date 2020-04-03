@@ -16,7 +16,8 @@ private:
     message_t m_receivedMessage;
     Janus_decoder_settings_t m_settings;
     uint8_t calculateChecksum(message_t& in);
-    // sendByte
+    int writeBytes(const char* i_src, size_t i_size) { return uart_write_bytes(m_settings.uartPort, i_src, i_size); }
+    QueueHandle_t m_queue;
 
 public:
     void init(uart_port_t i_uartPort,
