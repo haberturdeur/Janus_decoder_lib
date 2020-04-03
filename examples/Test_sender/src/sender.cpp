@@ -6,7 +6,7 @@ Decoder decoder;
 
 Janus_decoder_settings_t settings;
 void setup() {
-  settings.u_port = UART_NUM_2;
+  settings.uartPort = UART_NUM_2;
   decoder.init(settings);
 }
 

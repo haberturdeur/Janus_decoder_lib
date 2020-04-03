@@ -1,14 +1,13 @@
 #pragma once
-#include <vector>
-#include <memory>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 typedef uint8_t id_t;
 typedef std::vector<uint8_t> input_t;
 
-enum{
+enum {
     u8_r = 1,
     u16_r,
     u32_r,
@@ -27,53 +26,47 @@ enum{
 };
 
 class BaseResult {
-    public:
-        virtual uint8_t getType() = 0;
+public:
+    virtual uint8_t type() = 0;
 };
 
-class Janus_command_base {
- public:
-  virtual ~Janus_command_base() = default;
-  virtual BaseResult* Execute(input_t* in) = 0;
+class JanusCommandBase {
+public:
+    virtual ~JanusCommandBase() = default;
+    virtual BaseResult* execute(input_t* in) = 0;
 };
 
-template<class T>
-class templated_result : public BaseResult{
-    public:
-        uint8_t getType(){ return templated_r;};
-        T getValue(){return value;};
-        T value;
+class U32Result : public BaseResult {
+public:
+    uint8_t type() override { return u32_r; };
+    uint32_t value() { return m_value; };
+    void setValue(uint32_t v)
+    {
+        m_value = v;
+    };
+
+private:
+    uint32_t m_value = 0;
 };
 
-class u32Result : public BaseResult {
-	public:
-		uint8_t getType() { return u32_r; };
-		uint32_t getValue() { return value; };
-		void setValue(uint32_t v) {
-			value = v;
-		};
-    private:
-		uint32_t value = 0;
+class AddressResult : public BaseResult {
+public:
+    uint8_t type() final { return addr_r; }
+    uint8_t value() { return m_value; }
+    void setValue(uint8_t v) { m_value = v; }
+
+private:
+    uint8_t m_value = 0;
 };
 
-class AddressResult : public BaseResult{
-    public:
-        uint8_t getType(){return addr_r;}
-        uint8_t getValue(){return value;}
-    protected:
-        void setValue(uint8_t v){value = v;}
-    private:
-        uint8_t value;
-};
+class SessionResult : public BaseResult {
+public:
+    uint8_t type() final { return session_r; }
+    uint64_t value() { return m_value; }
+    void setValue(uint8_t v) { m_value = v; }
 
-class SessionResult : public BaseResult{
-    public:
-        uint8_t getType(){return session_r;}
-        uint64_t getValue(){return value;}
-    protected:
-        void setValue(uint8_t v){value = v;}
-    private:
-        uint64_t value;
+private:
+    uint64_t m_value = 0;
 };
 
 // class Janus_command_test: public Janus_command_base{
@@ -86,31 +79,27 @@ class SessionResult : public BaseResult{
 // 		return (static_cast<BaseResult*>(result_p)); };
 // };
 
+class Command_handler {
+public:
+    void store(id_t i_cmdId, std::string i_cmdName, JanusCommandBase* i_cmd);
+    void store(std::map<std::string, id_t>* i_names, std::map<id_t, JanusCommandBase*>* i_ids);
 
-class Command_handler{
-    public:
-        void store( id_t cmd_id, std::string cmd_name, Janus_command_base* cmd);
-        void store( std::map<std::string, id_t>* names, std::map<id_t, Janus_command_base*>* ids);
-        void setInput(input_t* in);
-        BaseResult* run(id_t id, input_t* in = nullptr);
-        BaseResult* run(std::string name, input_t* in = nullptr);
-        id_t getId(std::string name);
-        std::string getName(id_t id);
-    private:
-        std::map<id_t, Janus_command_base*> _commands = {};
-        std::map<std::string, id_t> _names = {
-            {"read", 0x01},
-            {"write", 0x02},
-            {"welcome", 0x03},
-            {"address_change", 0x04},
-            {"session", 0x05}
-        };
-        input_t* input;
+    void setInput(input_t* i_inputPtr) { m_inputPtr = i_inputPtr; }
+
+    BaseResult* run(id_t i_id, input_t* i_inputPtr = nullptr) { return m_commands[i_id]->execute((i_inputPtr == nullptr) ? m_inputPtr : i_inputPtr); }
+    BaseResult* run(std::string i_name, input_t* i_inputPtr = nullptr) { return run(m_names[i_name], i_inputPtr); }
+
+    id_t id(std::string i_name) { return m_names[i_name]; }
+    std::string name(id_t i_id);
+
+private:
+    std::map<id_t, JanusCommandBase*> m_commands = {};
+    std::map<std::string, id_t> m_names = {
+        { "read", 0x01 },
+        { "write", 0x02 },
+        { "welcome", 0x03 },
+        { "address_change", 0x04 },
+        { "session", 0x05 }
+    };
+    input_t* m_inputPtr;
 };
-
-
-
-
-
-
-
