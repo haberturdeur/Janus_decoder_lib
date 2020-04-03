@@ -1,5 +1,7 @@
 #pragma once
 
+#include "driver/uart.h"
+
 // Note: UART2 default pins IO16, IO17 do not work on ESP32-WROVER module
 // because these pins connected to PSRAM
 
@@ -28,4 +30,15 @@
 #define ECHO_TASK_STACK_SIZE (2048)
 #define ECHO_TASK_PRIO (10)
 
-const char saticStartByte = 0x80;
+static const char saticStartByte = 0x80;
+
+static const char *TAG = "Janus_decoder";
+
+static uart_config_t defaultUartConfig = {
+    .baud_rate = BAUD_RATE,
+    .data_bits = UART_DATA_8_BITS,
+    .parity = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_1,
+    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    .rx_flow_ctrl_thresh = 122
+};
