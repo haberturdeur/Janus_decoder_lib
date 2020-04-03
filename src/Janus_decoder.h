@@ -74,14 +74,15 @@ struct message_t
 
 struct Janus_decoder_settings_t
 {
-    uart_port_t u_port; 
+    uart_port_t u_port = UART_NUM_2; 
     int rx_p = DEFAULT_PIN_RXD; 
     int tx_p = DEFAULT_PIN_TXD; 
     int rts_p = DEFAULT_PIN_RTS; 
     int cts_p = DEFAULT_PIN_CTS;
     uart_config_t* u_config = &default_uart_config;
     int buff_size = BUF_SIZE;
-}Janus_decoder_default_settings;
+};
+
 
 
 class Decoder
@@ -89,6 +90,9 @@ class Decoder
 private:
     uart_port_t uart_port;
     int buffer_size;
+    static Janus_decoder_settings_t Janus_decoder_default_settings;
+protected:
+    uint8_t calculateChecksum(message_t &in);
 public:    
 
     void init(uart_port_t u_port, 
@@ -103,7 +107,7 @@ public:
             uint8_t rec_addr,
             uint8_t sen_addr,
             uint8_t cmd,
-            std::vector<uint8_t>* src);
+            std::vector<uint8_t>& src);
     message_t receive();
     uint8_t my_addr = 0x00;
     message_t received_message;
@@ -112,4 +116,5 @@ public:
     Decoder& getDecoder(){
         return *this;
     }
+    
 };
