@@ -76,34 +76,34 @@ class SessionResult : public BaseResult{
         uint64_t value;
 };
 
-class Janus_command_test: public Janus_command_base{
-public:
-	~Janus_command_test() = default;
-	BaseResult* Execute(input_t* in) {
-		u32_result result;
-		u32_result* result_p = &result;
-		result_p->value = (uint32_t)2;
-		return (static_cast<BaseResult*>(result_p)); };
-};
+// class Janus_command_test: public Janus_command_base{
+// public:
+// 	~Janus_command_test() = default;
+// 	BaseResult* Execute(input_t* in) {
+// 		u32_result result;
+// 		u32_result* result_p = &result;
+// 		result_p->value = (uint32_t)2;
+// 		return (static_cast<BaseResult*>(result_p)); };
+// };
 
 
 class Command_handler{
     public:
-        void store(Janus_command_base* cmd, id_t cmd_id, std::string cmd_name);
-        void store(std::map<id_t, Janus_command_base*>* ids, std::map<std::string, id_t>* names);
+        void store( id_t cmd_id, std::string cmd_name, Janus_command_base* cmd);
+        void store( std::map<std::string, id_t>* names, std::map<id_t, Janus_command_base*>* ids);
         void setInput(input_t* in);
         BaseResult* run(id_t id, input_t* in = nullptr);
         BaseResult* run(std::string name, input_t* in = nullptr);
         id_t getId(std::string name);
         std::string getName(id_t id);
     private:
-        std::map<id_t, Janus_command_base*> commands_ = {};
-        std::map<std::string, id_t> names_ = {
-            {"read", 0x1},
-            {"write", 0x2},
-            {"welcome", 0x3},
-            {"address_change", 0x4},
-            {"session", 0x5}
+        std::map<id_t, Janus_command_base*> _commands = {};
+        std::map<std::string, id_t> _names = {
+            {"read", 0x01},
+            {"write", 0x02},
+            {"welcome", 0x03},
+            {"address_change", 0x04},
+            {"session", 0x05}
         };
         input_t* input;
 };

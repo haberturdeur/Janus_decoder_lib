@@ -30,3 +30,13 @@
 *.exe
 *.out
 *.app
+
+.pio/*
+.vscode/*
+
+main.cpp
+sdkconfig.h
+sdkconfig
+
+.vscode
+.pio
