@@ -48,16 +48,16 @@ void Decoder::send(uint8_t recepientAddress, uint8_t sen_addr, uint8_t cmd, std:
     out.senderAddress = sen_addr;
 
     out.check = calculateChecksum(out);
-    uart_write_bytes(m_uartPort, &saticStartByte, 1);
-    uart_write_bytes(m_uartPort, (const char*)&recepientAddress, 1);
-    uart_write_bytes(m_uartPort, (const char*)&sen_addr, 1);
-    uart_write_bytes(m_uartPort, (const char*)&cmd, 1);
-    uart_write_bytes(m_uartPort, (const char*)&length_of_data, 1);
-    uart_write_bytes(m_uartPort, (const char*)&out.check, 1);
+    writeBytes(&saticStartByte, 1);
+    writeBytes((const char*)&recepientAddress, 1);
+    writeBytes((const char*)&sen_addr, 1);
+    writeBytes((const char*)&cmd, 1);
+    writeBytes((const char*)&length_of_data, 1);
+    writeBytes((const char*)&out.check, 1);
     char out_data = 0;
     for (int i = 0; i < length_of_data; i++) {
         out_data = src[i];
-        uart_write_bytes(m_uartPort, (const char*)(&out_data), 1);
+        writeBytes((const char*)(&out_data), 1);
     }
     vTaskDelay(200 / portTICK_PERIOD_MS);
 }
@@ -71,7 +71,7 @@ message_t Decoder::receive()
 #endif
     static uint8_t* rec_buff = (uint8_t*)malloc(m_bufferSize);
     do {
-        uart_read_bytes(m_uartPort, &read_byte, 1, PACKET_READ_TICS);
+        readBytes( &read_byte, 1, PACKET_READ_TICS);
 #if debug_decoder
         printf(".");
 #endif
@@ -79,35 +79,35 @@ message_t Decoder::receive()
 #if debug_decoder
     printf("\n Parsing message.\n");
 #endif
-    uart_read_bytes(m_uartPort, rec_buff, 1, PACKET_READ_TICS);
+    readBytes( rec_buff, 1, PACKET_READ_TICS);
     m_receivedMessage.recepientAddress = rec_buff[0];
 #if debug_decoder
     printf("Recepient: %u\n", m_receivedMessage.recepientAddress);
 #endif
-    uart_read_bytes(m_uartPort, rec_buff, 1, PACKET_READ_TICS);
+    readBytes( rec_buff, 1, PACKET_READ_TICS);
     m_receivedMessage.senderAddress = rec_buff[0];
 #if debug_decoder
     printf("Sender: %u\n", m_receivedMessage.senderAddress);
 #endif
-    uart_read_bytes(m_uartPort, rec_buff, 1, PACKET_READ_TICS);
+    readBytes( rec_buff, 1, PACKET_READ_TICS);
     m_receivedMessage.cmd = rec_buff[0];
 #if debug_decoder
     printf("Command: %u\n", m_receivedMessage.cmd);
     printf((const char*)&m_receivedMessage.cmd);
 #endif
-    uart_read_bytes(m_uartPort, rec_buff, 1, PACKET_READ_TICS);
+    readBytes( rec_buff, 1, PACKET_READ_TICS);
     m_receivedMessage.length = rec_buff[0];
 #if debug_decoder
     printf("Length: %u\n", m_receivedMessage.length);
 #endif
-    uart_read_bytes(m_uartPort, rec_buff, 1, PACKET_READ_TICS);
+    readBytes( rec_buff, 1, PACKET_READ_TICS);
     m_receivedMessage.check = rec_buff[0];
 #if debug_decoder
     printf("Check: %u\n", m_receivedMessage.check);
     printf("Data: ");
 #endif
     for (int i = 0; i < m_receivedMessage.length; i++) {
-        uart_read_bytes(m_uartPort, rec_buff, 1, PACKET_READ_TICS);
+        readBytes( rec_buff, 1, PACKET_READ_TICS);
         m_receivedMessage.data.push_back(rec_buff[0]);
 #if debug_decoder
         printf("%u", m_receivedMessage.data[i]);
