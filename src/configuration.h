@@ -40,5 +40,9 @@ static uart_config_t defaultUartConfig = {
     .parity = UART_PARITY_DISABLE,
     .stop_bits = UART_STOP_BITS_1,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+<<<<<<< HEAD:src/config.h
     .rx_flow_ctrl_thresh = 122,
+=======
+    .rx_flow_ctrl_thresh = 122
+>>>>>>> event_based:src/configuration.h
 };
