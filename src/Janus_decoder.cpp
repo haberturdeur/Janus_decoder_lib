@@ -63,8 +63,6 @@ message_t Decoder::receive()
     m_receivedMessage.data.clear();
     input.clear();
 
-    ESP_LOGV(TAG, "Receiving message");
-
     static uint8_t* rec_buff = (uint8_t*)malloc(m_settings.uartBufferSize);
 
     do {
@@ -101,9 +99,50 @@ message_t Decoder::receive()
     ESP_LOGV(TAG, "\tCheck: %u\n", m_receivedMessage.check);
     // ESP_LOGV(TAG, "\tCalculated check: %u\n", crc16_le(CRC_START, input.data(), input.size() - 2));
     if (crc16_le(CRC_START, input.data(), input.size() - 2) == m_receivedMessage.check)
-        ESP_LOGV(TAG, "Check does match");
+        ESP_LOGI(TAG, "Check does match");
     else
         ESP_LOGE(TAG, "Check doesn't match");
 
     return m_receivedMessage;
+}
+
+bool Decoder::act(bool i_solveAll)
+{
+    auto& uartPort = m_settings.uartPort;
+    bool out = 0;
+    uart_event_t event;
+    while ((xQueueReceive(m_queue, static_cast<void*>(&event), static_cast<portTickType>(portMAX_DELAY))) && i_solveAll) {
+        ESP_LOGI(TAG, "uart[%d] event:", uartPort);
+
+        switch (event.type) {
+        case UART_DATA:
+            ESP_LOGI(TAG, "Received message");
+            receive();
+            out = 1;
+            break;
+        case UART_FIFO_OVF:
+            ESP_LOGW(TAG, "hw fifo overflow");
+            uart_flush_input(uartPort);
+            xQueueReset(m_queue);
+            break;
+        case UART_BUFFER_FULL:
+            ESP_LOGW(TAG, "ring buffer full");
+            uart_flush_input(uartPort);
+            xQueueReset(m_queue);
+            break;
+        case UART_BREAK:
+            ESP_LOGI(TAG, "uart rx break");
+            break;
+        case UART_PARITY_ERR:
+            ESP_LOGW(TAG, "uart parity error");
+            break;
+        case UART_FRAME_ERR:
+            ESP_LOGW(TAG, "uart frame error");
+            break;
+        default:
+            ESP_LOGI(TAG, "uart event type: %d", event.type);
+            break;
+        }
+    }
+    return out;
 }

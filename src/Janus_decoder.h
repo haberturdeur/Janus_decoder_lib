@@ -42,52 +42,5 @@ public:
     Janus_decoder_settings_t setting() { return m_settings; }
     uint8_t myAddress() { return m_myAddress; }
     message_t receivedMessage() { return m_receivedMessage; }
-    void act()
-    {
-        auto& bufferSize = m_settings.uartBufferSize;
-        auto& uartPort = m_settings.uartPort;
-        uart_event_t event;
-        uint8_t* dtmp = (uint8_t*)malloc(bufferSize);
-        if (xQueueReceive(m_queue, static_cast<void*>(&event), static_cast<portTickType>(portMAX_DELAY))) {
-            // bzero(dtmp, bufferSize);
-            ESP_LOGI(TAG, "uart[%d] event:", uartPort);
-            switch (event.type) {
-            case UART_DATA:
-                // ESP_LOGI(TAG, "[UART DATA]: %d", event.size);
-                // uart_read_bytes(uartPort, dtmp, event.size, portMAX_DELAY);
-                // ESP_LOGI(TAG, "[DATA EVT]:");
-                // for (int i = 0; i < event.size; i++) {
-                //     ESP_LOGI(TAG, "%d", dtmp[i]);
-                // }
-                // uart_write_bytes(uartPort, (const char*) dtmp, event.size);
-                receive();
-                break;
-            // case UART_FIFO_OVF:
-            //     ESP_LOGI(TAG, "hw fifo overflow");
-            //     uart_flush_input(uartPort);
-            //     xQueueReset(m_queue);
-            //     break;
-            case UART_BUFFER_FULL:
-                ESP_LOGI(TAG, "ring buffer full");
-                uart_flush_input(uartPort);
-                xQueueReset(m_queue);
-                break;
-            // case UART_BREAK:
-            //     ESP_LOGI(TAG, "uart rx break");
-            //     break;
-            // case UART_PARITY_ERR:
-            //     ESP_LOGI(TAG, "uart parity error");
-            //     break;
-            // case UART_FRAME_ERR:
-            //     ESP_LOGI(TAG, "uart frame error");
-            //     break;
-            //Others
-            default:
-                ESP_LOGI(TAG, "uart event type: %d", event.type);
-                break;
-            }
-        }
-        free(dtmp);
-        dtmp = NULL;
-    }
+    bool act(bool i_solveAll = 0);
 };
