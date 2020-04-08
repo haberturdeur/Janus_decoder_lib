@@ -1,10 +1,11 @@
 #pragma once
+
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
-typedef uint8_t id_t;
+typedef uint8_t Janus_id_t;
 typedef std::vector<uint8_t> input_t;
 
 enum {
@@ -81,20 +82,20 @@ private:
 
 class Command_handler {
 public:
-    void store(id_t i_cmdId, std::string i_cmdName, JanusCommandBase* i_cmd);
-    void store(std::map<std::string, id_t>* i_names, std::map<id_t, JanusCommandBase*>* i_ids);
+    void store(Janus_id_t i_cmdId, std::string i_cmdName, JanusCommandBase* i_cmd);
+    void store(std::map<std::string, Janus_id_t>* i_names, std::map<Janus_id_t, JanusCommandBase*>* i_ids);
 
     void setInput(input_t* i_inputPtr) { m_inputPtr = i_inputPtr; }
 
-    BaseResult* run(id_t i_id, input_t* i_inputPtr = nullptr) { return m_commands[i_id]->execute((i_inputPtr == nullptr) ? m_inputPtr : i_inputPtr); }
+    BaseResult* run(Janus_id_t i_id, input_t* i_inputPtr = nullptr) { return m_commands[i_id]->execute((i_inputPtr == nullptr) ? m_inputPtr : i_inputPtr); }
     BaseResult* run(std::string i_name, input_t* i_inputPtr = nullptr) { return run(m_names[i_name], i_inputPtr); }
 
-    id_t id(std::string i_name) { return m_names[i_name]; }
-    std::string name(id_t i_id);
+    Janus_id_t id(std::string i_name) { return m_names[i_name]; }
+    std::string name(Janus_id_t i_id);
 
 private:
-    std::map<id_t, JanusCommandBase*> m_commands = {};
-    std::map<std::string, id_t> m_names = {
+    std::map<Janus_id_t, JanusCommandBase*> m_commands = {};
+    std::map<std::string, Janus_id_t> m_names = {
         { "read", 0x01 },
         { "write", 0x02 },
         { "welcome", 0x03 },

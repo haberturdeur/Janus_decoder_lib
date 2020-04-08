@@ -4,6 +4,8 @@
 set(app_sources
 	"Janus_command_handler.cpp"
 	"Janus_decoder.cpp"
+	"main.cpp"
 )
 
-idf_component_register(SRCS ${app_sources})
+idf_component_register(SRCS ${app_sources}
+                    INCLUDE_DIRS ".")

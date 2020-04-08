@@ -22,7 +22,7 @@
 // CTS is not used in RS485 Half-Duplex Mode
 #define DEFAULT_PIN_CTS UART_PIN_NO_CHANGE
 
-#define BUF_SIZE 127
+#define BUF_SIZE 1024
 #define BAUD_RATE (115200)
 
 // Read packet timeout
@@ -30,9 +30,11 @@
 #define ECHO_TASK_STACK_SIZE (2048)
 #define ECHO_TASK_PRIO (10)
 
-static const char saticStartByte = 0x80;
+#define CRC_START 0xFFFF
 
-static const char *TAG = "Janus_decoder";
+static const char staticStartByte = 0x80;
+
+static const char* TAG = "Janus_decoder";
 
 static uart_config_t defaultUartConfig = {
     .baud_rate = BAUD_RATE,

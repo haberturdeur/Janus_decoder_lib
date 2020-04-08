@@ -7,7 +7,8 @@ void Decoder::init(uart_port_t i_uartPort,
     int i_rtsPin,
     int i_ctsPin,
     uart_config_t* i_uartConfigPtr,
-    int i_uartBufferSize)
+    int i_uartBufferSize,
+    TickType_t i_brake)
 {
     m_settings.uartPort = i_uartPort;
     m_settings.rxPin = i_rxPin;
@@ -16,6 +17,7 @@ void Decoder::init(uart_port_t i_uartPort,
     m_settings.ctsPin = i_ctsPin;
     m_settings.uartConfigPtr = i_uartConfigPtr;
     m_settings.uartBufferSize = i_uartBufferSize;
+    m_settings.brake = i_brake;
     init(m_settings);
 }
 
@@ -34,161 +36,74 @@ void Decoder::init(Janus_decoder_settings_t settings)
     uart_set_pin(m_settings.uartPort, m_settings.txPin, m_settings.rxPin, m_settings.rtsPin, m_settings.ctsPin);
     uart_driver_install(m_settings.uartPort, m_settings.uartBufferSize * 2, m_settings.uartBufferSize * 2, 20, &m_queue, 0);
     uart_set_mode(m_settings.uartPort, UART_MODE_RS485_HALF_DUPLEX);
+    ESP_LOGV(TAG, "Initialized decoder.");
 }
 
 void Decoder::send(uint8_t recepientAddress, uint8_t sen_addr, uint8_t cmd, std::vector<uint8_t>& src)
 {
     uint8_t length_of_data = src.size();
-    message_t out;
-    out.cmd = cmd;
-    out.data = src;
-    out.length = length_of_data;
-    out.recepientAddress = recepientAddress;
-    out.senderAddress = sen_addr;
+    std::vector<uint8_t> dataToSend = { recepientAddress, sen_addr, cmd, length_of_data };
+    dataToSend.insert(dataToSend.end(), src.begin(), src.end());
+    uint16_t check = crc16_le(CRC_START, dataToSend.data(), dataToSend.size());
+    dataToSend.insert(dataToSend.end(),
+        reinterpret_cast<uint8_t*>(&check),
+        reinterpret_cast<uint8_t*>(&check) + sizeof(check));
 
-    out.check = calculateChecksum(out);
-    writeBytes(&saticStartByte, 1);
-    writeBytes((const char*)&recepientAddress, 1);
-    writeBytes((const char*)&sen_addr, 1);
-    writeBytes((const char*)&cmd, 1);
-    writeBytes((const char*)&length_of_data, 1);
-    writeBytes((const char*)&out.check, 1);
-    char out_data = 0;
-    for (int i = 0; i < length_of_data; i++) {
-        out_data = src[i];
-        writeBytes((const char*)(&out_data), 1);
-    }
-    vTaskDelay(200 / portTICK_PERIOD_MS);
+    writeBytes(&staticStartByte, 1);
+    uart_write_bytes_with_break(m_settings.uartPort, reinterpret_cast<const char*>(dataToSend.data()), dataToSend.size(), m_settings.brake);
+    ESP_LOGV(TAG, "Sent data over decoder with check: %u", check);
+    // ESP_LOGV(TAG, "Check of whole message is: %u",crc16_le(CRC_START, dataToSend.data(), dataToSend.size()));
 }
 
 message_t Decoder::receive()
 {
+    esp_log_level_set(TAG, ESP_LOG_VERBOSE);
     uint8_t read_byte;
+    std::vector<uint8_t> input;
     m_receivedMessage.data.clear();
-#if debug_decoder
-    printf("Receiving message");
-#endif
-    static uint8_t* rec_buff = (uint8_t*)malloc(m_settings.uartBufferSize);
-    do {
-        readBytes( &read_byte, 1, PACKET_READ_TICS);
-#if debug_decoder
-        printf(".");
-#endif
-    } while (read_byte != saticStartByte);
-#if debug_decoder
-    printf("\n Parsing message.\n");
-#endif
-    readBytes( rec_buff, 1, PACKET_READ_TICS);
-    m_receivedMessage.recepientAddress = rec_buff[0];
-#if debug_decoder
-    printf("Recepient: %u\n", m_receivedMessage.recepientAddress);
-#endif
-    readBytes( rec_buff, 1, PACKET_READ_TICS);
-    m_receivedMessage.senderAddress = rec_buff[0];
-#if debug_decoder
-    printf("Sender: %u\n", m_receivedMessage.senderAddress);
-#endif
-    readBytes( rec_buff, 1, PACKET_READ_TICS);
-    m_receivedMessage.cmd = rec_buff[0];
-#if debug_decoder
-    printf("Command: %u\n", m_receivedMessage.cmd);
-    printf((const char*)&m_receivedMessage.cmd);
-#endif
-    readBytes( rec_buff, 1, PACKET_READ_TICS);
-    m_receivedMessage.length = rec_buff[0];
-#if debug_decoder
-    printf("Length: %u\n", m_receivedMessage.length);
-#endif
-    readBytes( rec_buff, 1, PACKET_READ_TICS);
-    m_receivedMessage.check = rec_buff[0];
-#if debug_decoder
-    printf("Check: %u\n", m_receivedMessage.check);
-    printf("Data: ");
-#endif
-    for (int i = 0; i < m_receivedMessage.length; i++) {
-        readBytes( rec_buff, 1, PACKET_READ_TICS);
-        m_receivedMessage.data.push_back(rec_buff[0]);
-#if debug_decoder
-        printf("%u", m_receivedMessage.data[i]);
-#endif
-    }
-    // received_message = parse_message(rec_buff);
-    uart_flush(m_settings.uartPort);
+    input.clear();
 
-    if (calculateChecksum(m_receivedMessage) == m_receivedMessage.check)
-        m_receivedMessage.correct = 1;
+    ESP_LOGV(TAG, "Receiving message");
+
+    static uint8_t* rec_buff = (uint8_t*)malloc(m_settings.uartBufferSize);
+
+    do {
+        readBytes(&read_byte, 1, PACKET_READ_TICS);
+        ESP_LOGV(TAG, ".");
+    } while (read_byte != staticStartByte);
+
+    ESP_LOGV(TAG, "Reading message.");
+
+    readBytes(rec_buff, LENGTH_OF_DATA_BYTE, PACKET_READ_TICS);
+    input.insert(input.end(), rec_buff, rec_buff + LENGTH_OF_DATA_BYTE);
+
+    readBytes(rec_buff, input.back() + 2, PACKET_READ_TICS);
+    input.insert(input.end(), rec_buff, rec_buff + input.back() + 2);
+
+    m_receivedMessage.recepientAddress = input[0];
+    ESP_LOGV(TAG, "\tRecepient: %u", m_receivedMessage.recepientAddress);
+
+    m_receivedMessage.senderAddress = input[1];
+    ESP_LOGV(TAG, "\tSender: %u", m_receivedMessage.senderAddress);
+
+    m_receivedMessage.cmd = input[2];
+    ESP_LOGV(TAG, "\tCommand: %u", m_receivedMessage.cmd);
+
+    m_receivedMessage.length = input[3];
+    ESP_LOGV(TAG, "\tLength of data: %u", m_receivedMessage.length);
+
+    for (int i = 4; i < (input.size() - 2); i++) {
+        m_receivedMessage.data.push_back(input[i]);
+        ESP_LOGV(TAG, "\tData byte%i: %u", i - 4, m_receivedMessage.data.back());
+    }
+
+    m_receivedMessage.check = *reinterpret_cast<uint16_t*>(input.data() + LENGTH_OF_DATA_BYTE + m_receivedMessage.length);
+    ESP_LOGV(TAG, "\tCheck: %u\n", m_receivedMessage.check);
+    // ESP_LOGV(TAG, "\tCalculated check: %u\n", crc16_le(CRC_START, input.data(), input.size() - 2));
+    if (crc16_le(CRC_START, input.data(), input.size() - 2) == m_receivedMessage.check)
+        ESP_LOGV(TAG, "Check does match");
     else
-        m_receivedMessage.correct = 0;
-#if debug_decoder
-    printf("Check_calc: %u\n", calculateChecksum(m_receivedMessage));
-    printf("Check_sum check: %u\n", m_receivedMessage.correct);
-#endif
+        ESP_LOGE(TAG, "Check doesn't match");
 
     return m_receivedMessage;
-}
-
-uint8_t Decoder::calculateChecksum(message_t& in)
-{
-    uint32_t check_calc = 0;
-
-    check_calc += in.recepientAddress;
-    check_calc += in.senderAddress;
-    check_calc += in.cmd;
-    check_calc += in.length;
-    for (auto& i : in.data)
-        check_calc += in.data[i];
-    uint8_t out = check_calc % 256;
-    return out;
-}
-
-message_t Decoder::parseMessage(uint8_t* msg)
-{
-    message_t output;
-#if debug_decoder
-    printf("Parsing message.\n");
-#endif
-    output.recepientAddress = msg[(RECEPIENT_ADDR * sizeof(uint8_t))];
-#if debug_decoder
-    printf("Recepient: %u\n", output.recepientAddress);
-#endif
-    output.senderAddress = msg[(SENDER_ADDR * sizeof(uint8_t))];
-#if debug_decoder
-    printf("Sender: %u\n", output.senderAddress);
-#endif
-    output.cmd = msg[(COMMAND * sizeof(uint8_t))];
-#if debug_decoder
-    printf("Command: %u\n", output.cmd);
-    printf((const char*)&output.cmd);
-    printf("Data: ");
-#endif
-
-    output.check = msg[(CHECK_BYTE * sizeof(uint8_t))];
-#if debug_decoder
-    printf("Check: %u\n", output.check);
-#endif
-    output.data.clear();
-    for (int i = 0; i < output.length; i++) {
-        output.data.push_back(msg[(FIRST_DATA_BYTE * sizeof(uint8_t)) + (i * sizeof(uint8_t))]);
-#if debug_decoder
-        printf("%u\n", output.data[i]);
-#endif
-    }
-
-    int check_calc = 0;
-
-    check_calc += output.recepientAddress;
-    check_calc += output.senderAddress;
-    check_calc += output.cmd;
-    for (auto& i : output.data)
-        check_calc += output.data[i];
-    check_calc = check_calc % 256;
-    if (check_calc == output.check)
-        output.correct = 1;
-    else
-        output.correct = 0;
-#if debug_decoder
-    printf("Check_calc: %u\n", check_calc);
-    printf("Check_sum check: %u\n", output.correct);
-#endif
-    return output;
 }

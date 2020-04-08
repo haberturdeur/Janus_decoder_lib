@@ -1,6 +1,9 @@
 #pragma once
+
+#include "freertos/queue.h"
 #include <cstdint>
 #include <driver/uart.h>
+#include <vector>
 
 enum byte_order {
     START_BYTE,
@@ -8,8 +11,9 @@ enum byte_order {
     SENDER_ADDR_BYTE,
     COMMAND_BYTE,
     LENGTH_OF_DATA_BYTE,
-    CHECK_BYTE,
-    FIRST_DATA_BYTE
+    FIRST_DATA_BYTE,
+    CHECK_BYTE_LO,
+    CHECK_BYTE_HI
 };
 
 enum message_order {
@@ -17,8 +21,8 @@ enum message_order {
     SENDER_ADDR,
     COMMAND,
     LENGHT_OF_DATA,
-    CHECK,
-    FIRST_DATA
+    DATA,
+    CHECK
 };
 
 struct message_t {
@@ -26,7 +30,7 @@ struct message_t {
     uint8_t senderAddress;
     uint8_t cmd;
     uint8_t length;
-    uint8_t check;
+    uint16_t check;
     std::vector<uint8_t> data;
     bool correct { 0 };
 };
@@ -39,4 +43,5 @@ struct Janus_decoder_settings_t {
     int ctsPin = DEFAULT_PIN_CTS;
     uart_config_t* uartConfigPtr = &defaultUartConfig;
     int uartBufferSize = BUF_SIZE;
+    TickType_t brake = 16; // 2 * 8bits = 2 chars
 };
